@@ -119,7 +119,7 @@ generateBtn.addEventListener("click", async () => {
     return;
   }
 
-  const res = await fetch("https://your-cloudflare-worker.com/generate", {
+  const res = await fetch("https://loral-woker.eathen618.workers.dev/", {
     method: "POST",
     body: JSON.stringify({ products: selectedProducts }),
     headers: { "Content-Type": "application/json" },
@@ -140,7 +140,7 @@ chatForm.addEventListener("submit", async (e) => {
   chatWindow.innerHTML += `<p class="chat-msg user">${msg}</p>`;
   chatHistory.push({ role: "user", content: msg });
 
-  const res = await fetch("https://your-cloudflare-worker.com/chat", {
+  const res = await fetch("https://loral-woker.eathen618.workers.dev/", {
     method: "POST",
     body: JSON.stringify({ messages: chatHistory }),
     headers: { "Content-Type": "application/json" },
