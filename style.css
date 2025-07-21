@@ -253,3 +253,42 @@ body {
 .generate-btn i {
   margin-right: 8px;
 }
+
+.product-card.selected {
+  border: 2px solid #ff003b;
+  background-color: #fff0f4;
+}
+
+.selected-product {
+  background: #f0f0f0;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+}
+
+.selected-product button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #ff003b;
+}
+
+.chat-msg {
+  padding: 8px;
+  margin: 6px 0;
+  border-radius: 6px;
+}
+
+.chat-msg.user {
+  background-color: #e3a535;
+  align-self: flex-end;
+  text-align: right;
+}
+
+.chat-msg.bot {
+  background-color: #f0f0f0;
+}
