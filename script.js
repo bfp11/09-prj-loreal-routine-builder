@@ -8,14 +8,14 @@ const selectedList = document.getElementById("selectedProductsList");
 let selectedProducts = [];
 let chatHistory = [];
 
-/* Load product data */
+const WORKER_URL = "https://loral-woker.eathen618.workers.dev/";
+
 async function loadProducts() {
   const response = await fetch("products.json");
   const data = await response.json();
   return data.products;
 }
 
-/* Display products */
 function displayProducts(products) {
   productsContainer.innerHTML = products
     .map(
@@ -43,7 +43,6 @@ function displayProducts(products) {
   });
 }
 
-/* Toggle product selection */
 function toggleProductSelection(card) {
   const id = parseInt(card.dataset.id);
   const exists = selectedProducts.find((p) => p.id === id);
@@ -56,19 +55,19 @@ function toggleProductSelection(card) {
       const product = products.find((p) => p.id === id);
       selectedProducts.push(product);
       card.classList.add("selected");
+      updateSelectedProductsList();
+      saveToLocalStorage();
     });
   }
   updateSelectedProductsList();
   saveToLocalStorage();
 }
 
-/* Toggle description */
 function toggleDescription(id) {
   const el = document.getElementById(`desc-${id}`);
   el.style.display = el.style.display === "none" ? "block" : "none";
 }
 
-/* Update selected products list */
 function updateSelectedProductsList() {
   selectedList.innerHTML = selectedProducts
     .map(
@@ -81,7 +80,6 @@ function updateSelectedProductsList() {
     .join("");
 }
 
-/* Remove individual product */
 function removeProduct(id) {
   selectedProducts = selectedProducts.filter((p) => p.id !== id);
   document
@@ -91,12 +89,10 @@ function removeProduct(id) {
   saveToLocalStorage();
 }
 
-/* Save selections */
 function saveToLocalStorage() {
   localStorage.setItem("selectedProducts", JSON.stringify(selectedProducts));
 }
 
-/* Load selections */
 window.addEventListener("load", async () => {
   const saved = JSON.parse(localStorage.getItem("selectedProducts")) || [];
   const products = await loadProducts();
@@ -104,7 +100,6 @@ window.addEventListener("load", async () => {
   updateSelectedProductsList();
 });
 
-/* Filter products */
 categoryFilter.addEventListener("change", async (e) => {
   const all = await loadProducts();
   const selectedCategory = e.target.value;
@@ -112,42 +107,56 @@ categoryFilter.addEventListener("change", async (e) => {
   displayProducts(filtered);
 });
 
-/* Generate routine */
 generateBtn.addEventListener("click", async () => {
   if (selectedProducts.length === 0) {
-    chatWindow.innerHTML += `<p class="chat-msg bot">Please select at least one product first.</p>`;
+    chatWindow.innerHTML += `<p class="chat-msg bot">Please select at least one product.</p>`;
     return;
   }
 
-  const res = await fetch("https://loral-woker.eathen618.workers.dev/", {
+  const systemPrompt = {
+    role: "system",
+    content: "You are a professional skincare and beauty advisor. Based on the user's selected products, generate a personalized skincare/haircare/makeup routine with brief, helpful steps."
+  };
+
+  const userMessage = {
+    role: "user",
+    content: `Here are the selected products:\n\n${selectedProducts
+      .map(
+        (p) => `- ${p.name} (${p.brand}, category: ${p.category})\n  ${p.description}`
+      )
+      .join("\n\n")}\n\nPlease generate a routine using these products.`
+  };
+
+  const res = await fetch(WORKER_URL, {
     method: "POST",
-    body: JSON.stringify({ products: selectedProducts }),
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: [systemPrompt, userMessage] })
   });
 
   const data = await res.json();
-  chatWindow.innerHTML += `<p class="chat-msg bot">${data.routine}</p>`;
-  chatHistory.push({ role: "assistant", content: data.routine });
+  const reply = data.choices?.[0]?.message?.content || "Something went wrong.";
+  chatWindow.innerHTML += `<p class="chat-msg bot">${reply}</p>`;
+  chatHistory.push(systemPrompt, userMessage, { role: "assistant", content: reply });
 });
 
-/* Handle chat */
 chatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const input = document.getElementById("userInput");
-  const msg = input.value.trim();
-  if (!msg) return;
+  const message = input.value.trim();
+  if (!message) return;
 
-  chatWindow.innerHTML += `<p class="chat-msg user">${msg}</p>`;
-  chatHistory.push({ role: "user", content: msg });
+  chatWindow.innerHTML += `<p class="chat-msg user">${message}</p>`;
+  chatHistory.push({ role: "user", content: message });
 
-  const res = await fetch("https://loral-woker.eathen618.workers.dev/", {
+  const res = await fetch(WORKER_URL, {
     method: "POST",
-    body: JSON.stringify({ messages: chatHistory }),
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: chatHistory })
   });
 
   const data = await res.json();
-  chatWindow.innerHTML += `<p class="chat-msg bot">${data.reply}</p>`;
-  chatHistory.push({ role: "assistant", content: data.reply });
+  const reply = data.choices?.[0]?.message?.content || "Sorry, I had trouble answering.";
+  chatWindow.innerHTML += `<p class="chat-msg bot">${reply}</p>`;
+  chatHistory.push({ role: "assistant", content: reply });
   input.value = "";
 });
